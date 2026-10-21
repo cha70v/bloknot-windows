@@ -1,7 +1,7 @@
-# Сборка установщика Блокнота для Windows.
-# Запуск: вкладка Actions → «Блокнот для Windows» → Run workflow.
-# Готовый установщик появится в разделе Releases (и в артефактах запуска).
-name: Блокнот для Windows
+# Сборка Bloknot (приложение Блокнота) для Windows и macOS.
+# Запускается сама после каждого коммита; вручную: Actions → «Bloknot для Windows и Mac» → Run workflow.
+# Готовые файлы появятся в разделе Releases: Bloknot_<версия>_x64-setup.exe и Bloknot_<версия>_universal.dmg.
+name: Bloknot для Windows и Mac
 
 on:
   workflow_dispatch:
@@ -13,7 +13,24 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            args: --bundles nsis
+            rust_targets: ''
+            out: src-tauri/target/release/bundle/nsis/*.exe
+          - name: macOS
+            os: macos-latest
+            # универсальная сборка: Mac на Apple Silicon (M1–M4) и на Intel
+            args: --target universal-apple-darwin --bundles dmg
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            out: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +39,8 @@ jobs:
           node-version: 20
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -30,19 +49,22 @@ jobs:
       - name: Установка Tauri CLI
         run: npm install
 
-      - name: Сборка и публикация установщика
+      - name: Сборка и публикация
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          args: ${{ matrix.args }}
           tagName: v__VERSION__
-          releaseName: Блокнот для Windows __VERSION__
-          releaseBody: Скачайте файл, который заканчивается на «x64-setup.exe», и запустите его.
+          releaseName: Bloknot __VERSION__
+          releaseBody: |
+            Windows — файл, который заканчивается на «x64-setup.exe».
+            Mac — файл «.dmg»: откройте его и перетащите Bloknot в «Программы». При первом запуске: «Системные настройки → Конфиденциальность и безопасность → Всё равно открыть».
           releaseDraft: false
           prerelease: false
 
-      - name: Установщик в артефакты запуска
+      - name: Файл в артефакты запуска
         uses: actions/upload-artifact@v4
         with:
-          name: bloknot-windows-setup
-          path: src-tauri/target/release/bundle/nsis/*.exe
+          name: Bloknot-${{ matrix.name }}
+          path: ${{ matrix.out }}

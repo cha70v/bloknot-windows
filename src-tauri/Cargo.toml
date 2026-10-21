@@ -1,7 +1,7 @@
 [package]
 name = "bloknot"
-version = "1.0.0"
-description = "Блокнот для Windows"
+version = "1.0.1"
+description = "Bloknot for Windows"
 edition = "2021"
 
 [build-dependencies]

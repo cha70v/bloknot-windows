@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Блокнот</title>
+<title>Bloknot</title>
 <style>
   :root { --ink: #37352f; --ink-2: #787774; --line: #e9e9e7; --paper: #ffffff; --bg: #f7f7f5; --accent: #2383e2; --err: #d44c47; }
   @media (prefers-color-scheme: dark) {
@@ -29,13 +29,13 @@
 <body>
 <form class="card" id="f">
   <div class="logo">📒</div>
-  <h1>Блокнот</h1>
+  <h1>Bloknot</h1>
   <p>Укажите адрес, по которому ваш Блокнот открывается в браузере.</p>
   <label for="url">Адрес Блокнота</label>
   <input id="url" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://notes.example.ru/" required autofocus>
   <div class="err" id="err" role="alert"></div>
   <button type="submit" id="go">Открыть</button>
-  <p class="hint">Адрес можно сменить позже: правой кнопкой по значку Блокнота в трее → «Сменить адрес Блокнота».</p>
+  <p class="hint">Адрес можно сменить позже: правой кнопкой по значку Bloknot в трее → «Сменить адрес Блокнота».</p>
 </form>
 <script>
   const invoke = window.__TAURI__ && window.__TAURI__.core ? window.__TAURI__.core.invoke : null;
@@ -46,7 +46,7 @@
   document.getElementById('f').addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
-    if (!invoke) { err.textContent = 'Эта страница работает только внутри приложения Блокнот.'; return; }
+    if (!invoke) { err.textContent = 'Эта страница работает только внутри приложения Bloknot.'; return; }
     go.disabled = true;
     go.textContent = 'Проверяю адрес…';
     try {

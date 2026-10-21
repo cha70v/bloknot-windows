@@ -1,4 +1,4 @@
-// Блокнот для Windows: окно с вашим Блокнотом на сервере, значок в трее,
+// Bloknot — приложение Блокнота для Windows: окно с вашим Блокнотом на сервере, значок в трее,
 // автозапуск и уведомления Windows о новых версиях Блокнота на сервере.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -197,7 +197,7 @@ fn allow_navigation(app: &AppHandle, url: &Url) -> bool {
 fn check_updates(app: &AppHandle, manual: bool) {
     let Some(server) = current_server(app) else {
         if manual {
-            notify(app, "Блокнот", "Сначала укажите адрес Блокнота.");
+            notify(app, "Bloknot", "Сначала укажите адрес Блокнота.");
         }
         return;
     };
@@ -224,7 +224,7 @@ fn check_updates(app: &AppHandle, manual: bool) {
     match previous {
         Some(p) if p != version => {
             let body = if h.notes.is_empty() {
-                "Откройте Блокнот, чтобы увидеть изменения.".to_string()
+                "Откройте Bloknot, чтобы увидеть изменения.".to_string()
             } else {
                 h.notes
                     .iter()
@@ -294,7 +294,7 @@ async fn set_server(app: AppHandle, url: String) -> Result<String, String> {
 }
 
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Открыть Блокнот", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Открыть Bloknot", true, None::<&str>)?;
     let check = MenuItem::with_id(app, "check", "Проверить обновления", true, None::<&str>)?;
     let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
     let autostart = CheckMenuItem::with_id(
@@ -318,7 +318,7 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     )?;
     let autostart_item = autostart.clone();
     let mut tray = TrayIconBuilder::with_id("main")
-        .tooltip("Блокнот")
+        .tooltip("Bloknot")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id.as_ref() {
@@ -382,7 +382,7 @@ fn main() {
             app.manage(AppState { config: Mutex::new(config) });
             let handle = app.handle().clone();
             WebviewWindowBuilder::new(app, "main", start)
-                .title("Блокнот")
+                .title("Bloknot")
                 .inner_size(1200.0, 820.0)
                 .min_inner_size(420.0, 320.0)
                 .visible(!hidden)
@@ -405,11 +405,11 @@ fn main() {
                     if !c.tray_hint_shown {
                         c.tray_hint_shown = true;
                         save_config(app, &c);
-                        notify(app, "Блокнот работает в трее", "Окно закрыто, но Блокнот продолжает следить за обновлениями. Выйти — правой кнопкой по значку в трее.");
+                        notify(app, "Bloknot работает в трее", "Окно закрыто, но Bloknot продолжает следить за обновлениями. Выйти — правой кнопкой по значку в трее.");
                     }
                 }
             }
         })
         .run(tauri::generate_context!())
-        .expect("Не удалось запустить Блокнот");
+        .expect("Не удалось запустить Bloknot");
 }

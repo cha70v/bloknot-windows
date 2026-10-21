@@ -1,8 +1,8 @@
 {
   "name": "bloknot-desktop",
   "private": true,
-  "version": "1.0.1",
-  "description": "Блокнот для Windows — окно для self-hosted Блокнота",
+  "version": "1.0.2",
+  "description": "Bloknot — Блокнот для Windows и macOS",
   "scripts": {
     "tauri": "tauri"
   },

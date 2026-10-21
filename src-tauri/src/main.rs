@@ -1,5 +1,5 @@
-// Bloknot — приложение Блокнота для Windows: окно с вашим Блокнотом на сервере, значок в трее,
-// автозапуск и уведомления Windows о новых версиях Блокнота на сервере.
+// Bloknot — приложение Блокнота для Windows и macOS: окно с вашим Блокнотом на сервере,
+// значок в трее (в строке меню на Mac), автозапуск и уведомления о новых версиях Блокнота на сервере.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::{Deserialize, Serialize};
@@ -55,6 +55,22 @@ const LINK_SCRIPT: &str = r#"
   };
 })();
 "#;
+
+#[cfg(target_os = "macos")]
+const AUTOSTART_LABEL: &str = "Открывать при входе в систему";
+#[cfg(not(target_os = "macos"))]
+const AUTOSTART_LABEL: &str = "Запускать вместе с Windows";
+
+#[cfg(target_os = "macos")]
+const TRAY_HINT: (&str, &str) = (
+    "Bloknot продолжает работать",
+    "Окно закрыто, но Bloknot следит за обновлениями. Открыть — значок в Dock или в строке меню, выйти — ⌘Q.",
+);
+#[cfg(not(target_os = "macos"))]
+const TRAY_HINT: (&str, &str) = (
+    "Bloknot работает в трее",
+    "Окно закрыто, но Bloknot продолжает следить за обновлениями. Выйти — правой кнопкой по значку в трее.",
+);
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct Config {
@@ -193,7 +209,7 @@ fn allow_navigation(app: &AppHandle, url: &Url) -> bool {
     false
 }
 
-/// Сравнивает версию на сервере с той, о которой уже сообщали; при новой — уведомление Windows.
+/// Сравнивает версию на сервере с той, о которой уже сообщали; при новой — системное уведомление.
 fn check_updates(app: &AppHandle, manual: bool) {
     let Some(server) = current_server(app) else {
         if manual {
@@ -300,7 +316,7 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let autostart = CheckMenuItem::with_id(
         app,
         "autostart",
-        "Запускать вместе с Windows",
+        AUTOSTART_LABEL,
         true,
         autostart_on,
         None::<&str>,
@@ -320,7 +336,8 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let mut tray = TrayIconBuilder::with_id("main")
         .tooltip("Bloknot")
         .menu(&menu)
-        .show_menu_on_left_click(false)
+        // Windows: левый щелчок открывает окно, правый — меню; Mac: меню по щелчку, как у всех значков строки меню
+        .show_menu_on_left_click(cfg!(target_os = "macos"))
         .on_menu_event(move |app, event| match event.id.as_ref() {
             "open" => show_main(app),
             "check" => {
@@ -343,6 +360,9 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
+            if cfg!(target_os = "macos") {
+                return;
+            }
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
@@ -359,14 +379,30 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Mac: щелчок по значку в Dock снова показывает спрятанное окно.
+#[cfg(target_os = "macos")]
+fn on_run_event(app: &AppHandle, event: tauri::RunEvent) {
+    if let tauri::RunEvent::Reopen { .. } = event {
+        show_main(app);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn on_run_event(_app: &AppHandle, _event: tauri::RunEvent) {}
+
 fn main() {
-    // автозапуск с Windows: сразу в трей, без окна
+    // автозапуск при входе в систему: сразу в трей, без окна
     let hidden = std::env::args().any(|a| a == "--hidden");
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main(app)
+        }))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--hidden"])))
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Some(vec!["--hidden"]),
+        ))
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(StateFlags::all() & !StateFlags::VISIBLE)
@@ -379,7 +415,9 @@ fn main() {
                 Some(u) => WebviewUrl::External(u),
                 None => WebviewUrl::App("index.html".into()),
             };
-            app.manage(AppState { config: Mutex::new(config) });
+            app.manage(AppState {
+                config: Mutex::new(config),
+            });
             let handle = app.handle().clone();
             WebviewWindowBuilder::new(app, "main", start)
                 .title("Bloknot")
@@ -405,11 +443,12 @@ fn main() {
                     if !c.tray_hint_shown {
                         c.tray_hint_shown = true;
                         save_config(app, &c);
-                        notify(app, "Bloknot работает в трее", "Окно закрыто, но Bloknot продолжает следить за обновлениями. Выйти — правой кнопкой по значку в трее.");
+                        notify(app, TRAY_HINT.0, TRAY_HINT.1);
                     }
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("Не удалось запустить Bloknot");
+        .build(tauri::generate_context!())
+        .expect("Не удалось запустить Bloknot")
+        .run(on_run_event);
 }

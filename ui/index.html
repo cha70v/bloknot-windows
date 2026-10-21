@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Блокнот</title>
+<style>
+  :root { --ink: #37352f; --ink-2: #787774; --line: #e9e9e7; --paper: #ffffff; --bg: #f7f7f5; --accent: #2383e2; --err: #d44c47; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e6e6e4; --ink-2: #9b9b98; --line: #333331; --paper: #252525; --bg: #191919; --accent: #529cca; --err: #e57373; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif; padding: 16px; }
+  .card { width: 100%; max-width: 420px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 32px 28px 28px; }
+  .logo { font-size: 40px; line-height: 1; }
+  h1 { font-size: 22px; margin: 14px 0 6px; font-weight: 600; }
+  p { margin: 0 0 20px; color: var(--ink-2); }
+  label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+  input { width: 100%; height: 38px; padding: 0 10px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 6px; outline: none; }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  button { margin-top: 16px; width: 100%; height: 38px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font: inherit; font-weight: 500; cursor: pointer; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .err { color: var(--err); font-size: 13px; margin-top: 10px; min-height: 1em; }
+  .hint { font-size: 13px; margin: 18px 0 0; }
+</style>
+</head>
+<body>
+<form class="card" id="f">
+  <div class="logo">📒</div>
+  <h1>Блокнот</h1>
+  <p>Укажите адрес, по которому ваш Блокнот открывается в браузере.</p>
+  <label for="url">Адрес Блокнота</label>
+  <input id="url" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://notes.example.ru/" required autofocus>
+  <div class="err" id="err" role="alert"></div>
+  <button type="submit" id="go">Открыть</button>
+  <p class="hint">Адрес можно сменить позже: правой кнопкой по значку Блокнота в трее → «Сменить адрес Блокнота».</p>
+</form>
+<script>
+  const invoke = window.__TAURI__ && window.__TAURI__.core ? window.__TAURI__.core.invoke : null;
+  const input = document.getElementById('url');
+  const err = document.getElementById('err');
+  const go = document.getElementById('go');
+  if (invoke) invoke('get_server').then((s) => { if (s) input.value = s; }).catch(() => {});
+  document.getElementById('f').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    if (!invoke) { err.textContent = 'Эта страница работает только внутри приложения Блокнот.'; return; }
+    go.disabled = true;
+    go.textContent = 'Проверяю адрес…';
+    try {
+      await invoke('set_server', { url: input.value });
+    } catch (x) {
+      err.textContent = String(x);
+      go.disabled = false;
+      go.textContent = 'Открыть';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "bloknot-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Блокнот для Windows — окно для self-hosted Блокнота",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -14,7 +14,8 @@
   body { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--ink);
     font: 15px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif; padding: 16px; }
   .card { width: 100%; max-width: 420px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 32px 28px 28px; }
-  .logo { font-size: 40px; line-height: 1; }
+  .logo { display: block; width: 48px; height: 48px; }
+  @media (prefers-color-scheme: dark) { .logo { filter: invert(1); } }
   h1 { font-size: 22px; margin: 14px 0 6px; font-weight: 600; }
   p { margin: 0 0 20px; color: var(--ink-2); }
   label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
@@ -28,7 +29,7 @@
 </head>
 <body>
 <form class="card" id="f">
-  <div class="logo">📒</div>
+  <svg width="48" height="48" class="logo" role="img" aria-label="Bloknot" viewBox="0 0 304 304" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 39.6681C16 26.5966 26.5966 16 39.6681 16H263.332C276.403 16 287 26.5966 287 39.6681V263.332C287 276.403 276.403 287 263.332 287H39.6681C26.5966 287 16 276.403 16 263.332V39.6681Z" fill="black"/><path d="M130.79 110.672H215.996V236.114H90.5546V68.0699H130.79V110.672ZM132.368 194.103H174.182V152.092H132.368V194.103Z" fill-rule="evenodd" clip-rule="evenodd" fill="white"/></svg>
   <h1>Bloknot</h1>
   <p>Укажите адрес, по которому ваш Блокнот открывается в браузере.</p>
   <label for="url">Адрес Блокнота</label>

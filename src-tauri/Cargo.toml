@@ -1,6 +1,6 @@
 [package]
 name = "bloknot"
-version = "1.0.2"
+version = "1.0.3"
 description = "Bloknot for Windows and macOS"
 edition = "2021"
 

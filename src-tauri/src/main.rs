@@ -425,6 +425,9 @@ fn main() {
                 .min_inner_size(420.0, 320.0)
                 .visible(!hidden)
                 .initialization_script(LINK_SCRIPT)
+                // перетаскивание файлов и текста обрабатывает сам Блокнот (как в браузере):
+                // без этого окно перехватывает файлы, и картинку из папки нельзя бросить на страницу
+                .disable_drag_drop_handler()
                 .on_navigation(move |url| allow_navigation(&handle, url))
                 .build()?;
             build_tray(app)?;

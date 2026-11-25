@@ -189,6 +189,13 @@ fn open_setup(app: &AppHandle) {
 
 /// Окно показывает только сам Блокнот и локальные страницы; остальное открывается в браузере.
 fn allow_navigation(app: &AppHandle, url: &Url) -> bool {
+    #[cfg(windows)]
+    if url.host_str() == Some("bloknot-window-theme.invalid") {
+        if url.scheme() == "https" {
+            sync_window_theme(app, url.path());
+        }
+        return false;
+    }
     let scheme = url.scheme();
     let host = url.host_str().unwrap_or("");
     if matches!(scheme, "tauri" | "about" | "data" | "blob") || host == "tauri.localhost" {
@@ -207,6 +214,52 @@ fn allow_navigation(app: &AppHandle, url: &Url) -> bool {
         let _ = app.opener().open_url(url.as_str(), None::<&str>);
     }
     false
+}
+
+#[cfg(windows)]
+fn sync_window_theme(app: &AppHandle, path: &str) {
+    use std::ffi::c_void;
+
+    #[link(name = "dwmapi")]
+    extern "system" {
+        fn DwmSetWindowAttribute(
+            hwnd: *mut c_void,
+            attribute: u32,
+            value: *const c_void,
+            size: u32,
+        ) -> i32;
+    }
+
+    fn color_ref(hex: &str) -> Option<u32> {
+        if hex.len() != 6 || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return None;
+        }
+        let rgb = u32::from_str_radix(hex, 16).ok()?;
+        Some(((rgb & 0xff) << 16) | (rgb & 0xff00) | (rgb >> 16))
+    }
+
+    let (background, foreground) = if path == "/default" {
+        (u32::MAX, u32::MAX)
+    } else {
+        let Some((a, b)) = path.strip_prefix('/').and_then(|p| p.split_once('/')) else { return };
+        let (Some(a), Some(b)) = (color_ref(a), color_ref(b)) else { return };
+        (a, b)
+    };
+    let Some(window) = app.get_webview_window("main") else { return };
+    let Ok(hwnd) = window.hwnd() else { return };
+    const DWMWA_CAPTION_COLOR: u32 = 35;
+    const DWMWA_TEXT_COLOR: u32 = 36;
+    for (attribute, color) in [(DWMWA_CAPTION_COLOR, background), (DWMWA_TEXT_COLOR, foreground)] {
+        // Старые версии Windows оставляют системные цвета, если атрибут недоступен.
+        unsafe {
+            DwmSetWindowAttribute(
+                hwnd.0 as *mut c_void,
+                attribute,
+                (&color as *const u32).cast(),
+                std::mem::size_of::<u32>() as u32,
+            );
+        }
+    }
 }
 
 /// Сравнивает версию на сервере с той, о которой уже сообщали; при новой — системное уведомление.
@@ -419,12 +472,16 @@ fn main() {
                 config: Mutex::new(config),
             });
             let handle = app.handle().clone();
+            #[cfg(windows)]
+            let script = format!("{LINK_SCRIPT}\n{}", include_str!("window-theme.js"));
+            #[cfg(not(windows))]
+            let script = LINK_SCRIPT;
             WebviewWindowBuilder::new(app, "main", start)
                 .title("Bloknot")
                 .inner_size(1200.0, 820.0)
                 .min_inner_size(420.0, 320.0)
                 .visible(!hidden)
-                .initialization_script(LINK_SCRIPT)
+                .initialization_script(script)
                 // перетаскивание файлов и текста обрабатывает сам Блокнот (как в браузере):
                 // без этого окно перехватывает файлы, и картинку из папки нельзя бросить на страницу
                 .disable_drag_drop_handler()

@@ -1,6 +1,6 @@
 [package]
 name = "bloknot"
-version = "1.0.4"
+version = "1.0.6"
 description = "Bloknot for Windows and macOS"
 edition = "2021"
 
@@ -19,4 +19,5 @@ serde_json = "1"
 ureq = { version = "2", features = ["json"] }
 
 [profile.release]
-strip = true
+# символы не вырезаем: «голый» исполняемый файл антивирусы чаще принимают за упакованный вирус
+strip = false
